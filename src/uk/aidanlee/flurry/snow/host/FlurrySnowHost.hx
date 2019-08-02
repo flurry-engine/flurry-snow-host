@@ -9,9 +9,12 @@ class FlurrySnowHost extends snow.App
 {
     public var flurry : Flurry;
 
+    var desktop : Bool;
+
     public function new()
     {
-        flurry = Config.entry();
+        flurry  = Config.entry();
+        desktop = false;
     }
 
     override function config(_config : AppConfig) : AppConfig
@@ -31,6 +34,8 @@ class FlurrySnowHost extends snow.App
 
     override function ready()
     {
+        desktop = Std.is(app.runtime, uk.aidanlee.flurry.snow.runtime.FlurrySnowDesktopRuntime);
+
         // Setup snow timestep.
         // Fixed dt of 16.66
         fixed_timestep = true;
@@ -43,9 +48,17 @@ class FlurrySnowHost extends snow.App
     {
         // HACK : Need a cleaner way to poll input events in the update event instead of the tick.
         // We don't want to be poking into a backend specific runtime or calling SDL from here.
-        // (app.runtime : uk.aidanlee.flurry.utils.runtimes.FlurryRuntimeDesktop).pollEvents();
+        if (desktop)
+        {
+            (app.runtime : uk.aidanlee.flurry.snow.runtime.FlurrySnowDesktopRuntime).pollEvents();
+        }
 
         flurry.update(_dt);
+    }
+
+    override function tick(_dt : Float)
+    {
+        flurry.tick(_dt);
     }
 
     override function ondestroy()
