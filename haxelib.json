@@ -1,0 +1,13 @@
+{
+    "name"    : "flurry-snow-host",
+    "license" : "MIT",
+    "version" : "0.0.1",
+    "contributors": [
+        "Aidan"
+    ],
+    "releasenote": "initial release",
+    "classPath": "src",
+    "dependencies": {
+        "snow" : "gh:aidan63/snow"
+    }
+}
