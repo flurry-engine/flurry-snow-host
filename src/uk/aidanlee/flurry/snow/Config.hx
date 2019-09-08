@@ -24,7 +24,7 @@ class Config
                 {
                     case TInst(_.get() => t, _):
                         var path = {
-                            name : t.module,
+                            name : t.name,
                             sub  : t.module == t.name ? null : t.name,
                             pack : t.pack
                         };
