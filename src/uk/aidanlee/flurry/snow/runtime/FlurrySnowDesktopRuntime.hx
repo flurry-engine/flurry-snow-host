@@ -12,6 +12,8 @@ import uk.aidanlee.flurry.api.display.DisplayEvents;
 import uk.aidanlee.flurry.api.input.InputEvents;
 import uk.aidanlee.flurry.api.input.Types.KeyModifier;
 
+using rx.Observable;
+
 typedef RuntimeConfig = {}
 typedef WindowHandle  = Window;
 
@@ -80,7 +82,7 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
 
         _debug('sdl / init ok');
 
-        flurry.events.input.gamepadRumble.add(onRumbleRequest);
+        flurry.events.input.gamepadRumble.subscribeFunction(onRumbleRequest);
     }
 
     public static function timestamp() : Float
@@ -102,8 +104,6 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
 
     override public function shutdown(?_immediate : Bool = false)
     {
-        flurry.events.input.gamepadRumble.remove(onRumbleRequest);
-
         if (_immediate)
         {
             _debug('sdl / shutdown immediate');
@@ -160,7 +160,7 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
         switch (_event.type)
         {
             case SDL_KEYUP:
-                flurry.events.input.keyUp.dispatch(new InputEventKeyState(
+                flurry.events.input.keyUp.onNext(new InputEventKeyState(
                     _event.key.keysym.sym,
                     _event.key.keysym.scancode,
                     _event.key.repeat,
@@ -168,7 +168,7 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
                 ));
 
             case SDL_KEYDOWN:
-                flurry.events.input.keyDown.dispatch(new InputEventKeyState(
+                flurry.events.input.keyDown.onNext(new InputEventKeyState(
                     _event.key.keysym.sym,
                     _event.key.keysym.scancode,
                     _event.key.repeat,
@@ -176,7 +176,7 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
                 ));
 
             case SDL_TEXTEDITING:
-                flurry.events.input.textInput.dispatch(new InputEventTextInput(
+                flurry.events.input.textInput.onNext(new InputEventTextInput(
                     _event.edit.text,
                     _event.edit.start,
                     _event.edit.length,
@@ -184,7 +184,7 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
                 ));
 
             case SDL_TEXTINPUT:
-                flurry.events.input.textInput.dispatch(new InputEventTextInput(
+                flurry.events.input.textInput.onNext(new InputEventTextInput(
                     _event.edit.text,
                     0,
                     0,
@@ -192,7 +192,7 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
                 ));
 
             case SDL_MOUSEMOTION:
-                flurry.events.input.mouseMove.dispatch(new InputEventMouseMove(
+                flurry.events.input.mouseMove.onNext(new InputEventMouseMove(
                     _event.motion.x,
                     _event.motion.y,
                     _event.motion.xrel,
@@ -200,13 +200,13 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
                 ));
 
             case SDL_MOUSEBUTTONUP:
-                flurry.events.input.mouseUp.dispatch(new InputEventMouseState(_event.button.x, _event.button.y,  _event.button.button));
+                flurry.events.input.mouseUp.onNext(new InputEventMouseState(_event.button.x, _event.button.y,  _event.button.button));
 
             case SDL_MOUSEBUTTONDOWN:
-                flurry.events.input.mouseDown.dispatch(new InputEventMouseState(_event.button.x, _event.button.y,  _event.button.button));
+                flurry.events.input.mouseDown.onNext(new InputEventMouseState(_event.button.x, _event.button.y,  _event.button.button));
 
             case SDL_MOUSEWHEEL:
-                flurry.events.input.mouseWheel.dispatch(new InputEventMouseWheel(_event.wheel.x, _event.wheel.y));
+                flurry.events.input.mouseWheel.onNext(new InputEventMouseWheel(_event.wheel.x, _event.wheel.y));
 
             case SDL_JOYAXISMOTION:
 
@@ -216,17 +216,17 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
                 var val = (_event.jaxis.value + 32768) / (32767 + 32768);
                 var normalized_val = (-0.5 + val) * 2.0;
 
-                flurry.events.input.gamepadAxis.dispatch(new InputEventGamepadAxis(gp.slot, _event.jaxis.axis, normalized_val));
+                flurry.events.input.gamepadAxis.onNext(new InputEventGamepadAxis(gp.slot, _event.jaxis.axis, normalized_val));
 
             case SDL_JOYBUTTONUP:
                 var gp = gamepadInstanceSlotMapping[_event.jdevice.which];
 
-                flurry.events.input.gamepadUp.dispatch(new InputEventGamepadState(gp.slot, _event.jbutton.button, 0));
+                flurry.events.input.gamepadUp.onNext(new InputEventGamepadState(gp.slot, _event.jbutton.button, 0));
 
             case SDL_JOYBUTTONDOWN:
                 var gp = gamepadInstanceSlotMapping[_event.jdevice.which];
 
-                flurry.events.input.gamepadDown.dispatch(new InputEventGamepadState(gp.slot, _event.jbutton.button, 1));
+                flurry.events.input.gamepadDown.onNext(new InputEventGamepadState(gp.slot, _event.jbutton.button, 1));
 
             case SDL_JOYDEVICEADDED:
 
@@ -257,7 +257,7 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
 
                 _debug('sdl / removed joystick ${_event.jdevice.which} from slot ${gp.slot}');
 
-                flurry.events.input.gamepadDevice.dispatch(new InputEventGamepadDevice(
+                flurry.events.input.gamepadDevice.onNext(new InputEventGamepadDevice(
                     gp.slot,
                     SDL.gameControllerNameForIndex(_event.jdevice.which),
                     DeviceRemoved
@@ -270,19 +270,19 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
                 var val = (_event.caxis.value + 32768) / (32767 + 32768);
                 var normalized_val = (-0.5 + val) * 2.0;
 
-                flurry.events.input.gamepadAxis.dispatch(new InputEventGamepadAxis(gp.slot, _event.caxis.axis, normalized_val));
+                flurry.events.input.gamepadAxis.onNext(new InputEventGamepadAxis(gp.slot, _event.caxis.axis, normalized_val));
 
             case SDL_CONTROLLERBUTTONUP:
 
                 var gp = gamepadInstanceSlotMapping[_event.cdevice.which];
 
-                flurry.events.input.gamepadUp.dispatch(new InputEventGamepadState(gp.slot, _event.cbutton.button, 0));
+                flurry.events.input.gamepadUp.onNext(new InputEventGamepadState(gp.slot, _event.cbutton.button, 0));
 
             case SDL_CONTROLLERBUTTONDOWN:
 
                 var gp = gamepadInstanceSlotMapping[_event.cdevice.which];
 
-                flurry.events.input.gamepadDown.dispatch(new InputEventGamepadState(gp.slot, _event.cbutton.button, 1));
+                flurry.events.input.gamepadDown.onNext(new InputEventGamepadState(gp.slot, _event.cbutton.button, 1));
 
             case SDL_CONTROLLERDEVICEADDED:
                 setupNewGameController(_event.cdevice.which);
@@ -302,7 +302,7 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
 
                 _debug('sdl / removed game controller ${gp.instanceID} from slot ${gp.slot}');
 
-                flurry.events.input.gamepadDevice.dispatch(new InputEventGamepadDevice(
+                flurry.events.input.gamepadDevice.onNext(new InputEventGamepadDevice(
                     gp.slot,
                     SDL.gameControllerNameForIndex(gp.instanceID),
                     DeviceRemoved
@@ -320,46 +320,46 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
             switch (_event.window.event)
             {
                 case SDL_WINDOWEVENT_SHOWN:
-                    flurry.events.display.shown.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.shown.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_HIDDEN:
-                    flurry.events.display.hidden.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.hidden.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_EXPOSED:
-                    flurry.events.display.exposed.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.exposed.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_MOVED:
-                    flurry.events.display.moved.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.moved.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_MINIMIZED:
-                    flurry.events.display.minimised.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.minimised.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_MAXIMIZED:
-                    flurry.events.display.maximised.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.maximised.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_RESTORED:
-                    flurry.events.display.restored.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.restored.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_ENTER:
-                    flurry.events.display.enter.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.enter.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_LEAVE:
-                    flurry.events.display.leave.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.leave.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_FOCUS_GAINED:
-                    flurry.events.display.focusGained.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.focusGained.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_FOCUS_LOST:
-                    flurry.events.display.focusLost.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.focusLost.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_CLOSE:
-                    flurry.events.display.close.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.close.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_RESIZED:
-                    flurry.events.display.resized.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.resized.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
-                    flurry.events.display.sizeChanged.dispatch(new DisplayEventData(_event.window.data1, _event.window.data2));
+                    flurry.events.display.sizeChanged.onNext(new DisplayEventData(_event.window.data1, _event.window.data2));
 
                 case _:
             }
@@ -438,7 +438,7 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
                 gamepadSlots[slot] = gp;
                 gamepadInstanceSlotMapping[jsID] = gp;
 
-                flurry.events.input.gamepadDevice.dispatch(new InputEventGamepadDevice(
+                flurry.events.input.gamepadDevice.onNext(new InputEventGamepadDevice(
                     slot,
                     SDL.gameControllerNameForIndex(_deviceIndex),
                     DeviceAdded
@@ -483,7 +483,7 @@ class FlurrySnowDesktopRuntime extends snow.core.native.Runtime
                 gamepadSlots[slot] = gp;
                 gamepadInstanceSlotMapping[jsID] = gp;
 
-                flurry.events.input.gamepadDevice.dispatch(new InputEventGamepadDevice(
+                flurry.events.input.gamepadDevice.onNext(new InputEventGamepadDevice(
                     slot,
                     SDL.gameControllerNameForIndex(_deviceIndex),
                     DeviceAdded

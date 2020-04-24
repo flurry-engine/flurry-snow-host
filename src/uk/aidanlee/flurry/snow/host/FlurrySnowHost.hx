@@ -1,13 +1,12 @@
 package uk.aidanlee.flurry.snow.host;
 
 import snow.types.Types.AppConfig;
-import uk.aidanlee.flurry.Flurry;
 
 typedef UserConfig = {};
 
 class FlurrySnowHost extends snow.App
 {
-    public var flurry : Flurry;
+    public var flurry : uk.aidanlee.flurry.Flurry;
 
     var desktop : Bool;
 
