@@ -8,6 +8,6 @@
     "releasenote": "initial release",
     "classPath": "src",
     "dependencies": {
-        "snow" : "gh:aidan63/snow"
+        "snow" : "gh:aidan63/snow#8a3629b"
     }
 }
